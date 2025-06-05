@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const clipboardy = require('clipboardy');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 
@@ -11,7 +10,13 @@ const supportedFormats = {
   image: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']
 };
 
-function generateFileName(extension, outputPath) {
+function generateFileName(extension, outputPath, customName = null) {
+  if (customName) {
+    const nameWithoutExt = path.parse(customName).name;
+    const fileName = `${nameWithoutExt}.${extension}`;
+    return path.resolve(outputPath, fileName);
+  }
+  
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const fileName = `clipboard-${timestamp}.${extension}`;
   return path.resolve(outputPath, fileName);
@@ -59,11 +64,18 @@ async function main() {
           describe: 'Output directory path',
           type: 'string',
           default: '.'
+        })
+        .option('name', {
+          alias: 'n',
+          describe: 'Custom filename (without extension)',
+          type: 'string'
         });
     })
     .example('cb2f png .', 'Save clipboard image as PNG in current directory')
     .example('cb2f txt ~/Documents', 'Save clipboard text as TXT in Documents folder')
     .example('cb2f json', 'Save clipboard text as JSON in current directory')
+    .example('cb2f png . --name my-image', 'Save clipboard as my-image.png')
+    .example('cb2f txt . -n notes', 'Save clipboard as notes.txt')
     .help()
     .argv;
 
@@ -81,6 +93,7 @@ async function main() {
   }
 
   try {
+    const clipboardy = await import('clipboardy');
     let clipboardContent;
     
     if (isImageFormat(format)) {
@@ -102,7 +115,7 @@ async function main() {
       }
     }
 
-    const filePath = generateFileName(format, outputPath);
+    const filePath = generateFileName(format, outputPath, argv.name);
 
     let success;
     if (isImageFormat(format)) {

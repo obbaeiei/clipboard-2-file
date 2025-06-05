@@ -36,24 +36,39 @@ To unlink: `npm unlink -g clipboard-2-file`
 ## Usage
 
 ```bash
-cb2f <format> [output-path]
+cb2f <format> [output-path] [options]
 ```
+
+### Options
+
+- `--name, -n`: Custom filename (without extension)
 
 ### Examples
 
 ```bash
-# Save clipboard image as PNG in current directory
+# Save clipboard image as PNG in current directory (auto-generated name)
 cb2f png .
 
-# Save clipboard text as TXT in Documents folder  
+# Save clipboard text as TXT in Documents folder (auto-generated name)
 cb2f txt ~/Documents
 
-# Save clipboard content as JSON in current directory
+# Save clipboard content as JSON in current directory (auto-generated name)
 cb2f json
 
-# Save clipboard image as JPG
-cb2f jpg /path/to/output
+# Save clipboard image with custom filename
+cb2f png . --name my-screenshot
+cb2f jpg . -n photo-2024
+
+# Save clipboard text with custom filename
+cb2f txt . --name meeting-notes
+cb2f md ~/docs -n readme-draft
 ```
+
+### Filename Behavior
+
+- **Auto-generated (default)**: `clipboard-2024-01-15T10-30-45-123Z.png`
+- **Custom name**: Your specified name + format extension
+- Extension is automatically added based on format
 
 ### Supported Formats
 
