@@ -1,0 +1,20 @@
+{
+  "name": "clipboard-2-file",
+  "version": "1.0.0",
+  "description": "CLI utility to convert clipboard content to files",
+  "main": "index.js",
+  "bin": {
+    "cb2f": "./bin/cb2f.js"
+  },
+  "scripts": {
+    "start": "node bin/cb2f.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["clipboard", "cli", "file", "image", "utility"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "clipboardy": "^3.0.0",
+    "yargs": "^17.7.2"
+  }
+}
