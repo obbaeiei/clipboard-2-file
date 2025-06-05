@@ -17,7 +17,7 @@ Simple CLI utility to save clipboard content (text/images) to files with intuiti
 
 ```bash
 # Install globally
-npm install -g clipboard-2-file
+npm install -g cb2f
 
 # Save clipboard as specific filename
 cb2f screenshot.png
@@ -33,7 +33,7 @@ cb2f bug-report.png
 ### Option 1: npm (Recommended)
 
 ```bash
-npm install -g clipboard-2-file
+npm install -g cb2f
 ```
 
 ### Option 2: Development Setup

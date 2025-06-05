@@ -1,5 +1,5 @@
 {
-  "name": "clipboard-2-file",
+  "name": "cb2f",
   "version": "1.1.0",
   "description": "Simple CLI utility to save clipboard content (text/images) to files with intuitive filename.ext syntax",
   "main": "bin/cb2f.js",
