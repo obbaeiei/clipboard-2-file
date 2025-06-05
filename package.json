@@ -1,8 +1,8 @@
 {
   "name": "clipboard-2-file",
-  "version": "1.0.0",
-  "description": "CLI utility to convert clipboard content to files",
-  "main": "index.js",
+  "version": "1.1.0",
+  "description": "Simple CLI utility to save clipboard content (text/images) to files with intuitive filename.ext syntax",
+  "main": "bin/cb2f.js",
   "bin": {
     "cb2f": "./bin/cb2f.js"
   },
@@ -10,11 +10,39 @@
     "start": "node bin/cb2f.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["clipboard", "cli", "file", "image", "utility"],
+  "keywords": [
+    "clipboard", 
+    "cli", 
+    "file", 
+    "image", 
+    "utility", 
+    "screenshot", 
+    "save", 
+    "macos", 
+    "png", 
+    "txt",
+    "paste"
+  ],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/username/clipboard-2-file.git"
+  },
+  "homepage": "https://github.com/username/clipboard-2-file#readme",
+  "bugs": {
+    "url": "https://github.com/username/clipboard-2-file/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": ["darwin"],
   "dependencies": {
     "clipboardy": "^3.0.0",
     "yargs": "^17.7.2"
-  }
+  },
+  "files": [
+    "bin/",
+    "README.md"
+  ]
 }

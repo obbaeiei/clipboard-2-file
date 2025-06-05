@@ -2,8 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
+
+const execAsync = promisify(exec);
 
 const supportedFormats = {
   text: ['txt', 'md', 'json', 'js', 'ts', 'html', 'css', 'xml'],
@@ -12,14 +16,37 @@ const supportedFormats = {
 
 function generateFileName(extension, outputPath, customName = null) {
   if (customName) {
-    const nameWithoutExt = path.parse(customName).name;
-    const fileName = `${nameWithoutExt}.${extension}`;
+    // If customName already has an extension, use it as-is
+    if (path.extname(customName)) {
+      return path.resolve(outputPath, customName);
+    }
+    // Otherwise, add the extension
+    const fileName = `${customName}.${extension}`;
     return path.resolve(outputPath, fileName);
   }
   
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const fileName = `clipboard-${timestamp}.${extension}`;
   return path.resolve(outputPath, fileName);
+}
+
+function parseFileArgument(arg) {
+  const parsed = path.parse(arg);
+  if (parsed.ext) {
+    // Argument has extension (e.g., "test.png")
+    return {
+      filename: arg,
+      format: parsed.ext.slice(1).toLowerCase(), // Remove the dot
+      outputPath: '.'
+    };
+  } else {
+    // Legacy format (format only, e.g., "png")
+    return {
+      filename: null,
+      format: arg.toLowerCase(),
+      outputPath: '.'
+    };
+  }
 }
 
 async function saveTextToFile(content, filePath) {
@@ -32,10 +59,51 @@ async function saveTextToFile(content, filePath) {
   }
 }
 
-async function saveImageToFile(base64Data, filePath) {
+async function readImageFromClipboard() {
   try {
-    const buffer = Buffer.from(base64Data, 'base64');
-    await fs.promises.writeFile(filePath, buffer);
+    // Use osascript to check if clipboard contains image data
+    const { stdout: clipboardInfo } = await execAsync('osascript -e "clipboard info"');
+    if (!clipboardInfo.includes('PNGf') && !clipboardInfo.includes('JPEG') && !clipboardInfo.includes('TIFF')) {
+      return null;
+    }
+
+    // Create a temporary file to save clipboard image
+    const tempFile = path.join(require('os').tmpdir(), `clipboard-temp-${Date.now()}.png`);
+    
+    // Use AppleScript to save clipboard image to file
+    const script = `
+      tell application "System Events"
+        set imageData to the clipboard as «class PNGf»
+        set fileRef to open for access POSIX file "${tempFile}" with write permission
+        write imageData to fileRef
+        close access fileRef
+      end tell
+    `;
+    
+    await execAsync(`osascript -e '${script.replace(/'/g, "\\'")}'`);
+    
+    // Check if file was created and has content
+    const stats = await fs.promises.stat(tempFile);
+    if (stats.size === 0) {
+      await fs.promises.unlink(tempFile);
+      return null;
+    }
+    
+    // Read the file as buffer
+    const buffer = await fs.promises.readFile(tempFile);
+    
+    // Clean up temp file
+    await fs.promises.unlink(tempFile);
+    
+    return buffer;
+  } catch (error) {
+    throw new Error(`Failed to read image from clipboard: ${error.message}`);
+  }
+}
+
+async function saveImageToFile(imageData, filePath) {
+  try {
+    await fs.promises.writeFile(filePath, imageData);
     return true;
   } catch (error) {
     console.error(`Error saving image file: ${error.message}`);
@@ -53,15 +121,15 @@ function isTextFormat(format) {
 
 async function main() {
   const argv = yargs(hideBin(process.argv))
-    .usage('Usage: cb2f <format> [output-path]')
-    .command('$0 <format> [outputPath]', 'Convert clipboard content to file', (yargs) => {
+    .usage('Usage: cb2f <filename.ext|format> [output-path]')
+    .command('$0 <input> [outputPath]', 'Convert clipboard content to file', (yargs) => {
       yargs
-        .positional('format', {
-          describe: 'Output file format (txt, png, jpg, etc.)',
+        .positional('input', {
+          describe: 'Filename with extension (e.g., test.png) or format (e.g., png)',
           type: 'string'
         })
         .positional('outputPath', {
-          describe: 'Output directory path',
+          describe: 'Output directory path (optional when using filename.ext)',
           type: 'string',
           default: '.'
         })
@@ -71,16 +139,19 @@ async function main() {
           type: 'string'
         });
     })
-    .example('cb2f png .', 'Save clipboard image as PNG in current directory')
-    .example('cb2f txt ~/Documents', 'Save clipboard text as TXT in Documents folder')
-    .example('cb2f json', 'Save clipboard text as JSON in current directory')
-    .example('cb2f png . --name my-image', 'Save clipboard as my-image.png')
-    .example('cb2f txt . -n notes', 'Save clipboard as notes.txt')
+    .example('cb2f screenshot.png', 'Save clipboard image as screenshot.png')
+    .example('cb2f notes.txt', 'Save clipboard text as notes.txt')
+    .example('cb2f bug-report.jpg', 'Save clipboard image as bug-report.jpg')
+    .example('cb2f config.json', 'Save clipboard text as config.json')
+    .example('cb2f png', 'Save clipboard image with auto-generated name')
+    .example('cb2f txt ~/Documents', 'Save clipboard text to Documents folder')
     .help()
     .argv;
 
-  const format = argv.format.toLowerCase();
-  const outputPath = path.resolve(argv.outputPath);
+  const parsed = parseFileArgument(argv.input);
+  const format = parsed.format;
+  let outputPath = path.resolve(argv.outputPath);
+  let customName = argv.name || parsed.filename;
 
   if (!fs.existsSync(outputPath)) {
     console.error(`Error: Output path "${outputPath}" does not exist.`);
@@ -98,24 +169,33 @@ async function main() {
     
     if (isImageFormat(format)) {
       try {
-        clipboardContent = await clipboardy.read({ type: 'png' });
+        clipboardContent = await readImageFromClipboard();
         if (!clipboardContent || clipboardContent.length === 0) {
           console.error('Error: No image found in clipboard.');
+          console.error('Make sure you have copied an image and granted clipboard permissions to Terminal.');
           process.exit(1);
         }
       } catch (error) {
-        console.error('Error: No image found in clipboard or clipboard access failed.');
+        console.error('Error: Clipboard access failed:', error.message);
+        console.error('On macOS: Go to System Preferences > Security & Privacy > Privacy > Input Monitoring and add Terminal/iTerm.');
         process.exit(1);
       }
     } else {
-      clipboardContent = await clipboardy.read();
-      if (!clipboardContent || clipboardContent.trim().length === 0) {
-        console.error('Error: No text found in clipboard.');
+      try {
+        clipboardContent = await clipboardy.default.read();
+        if (!clipboardContent || clipboardContent.trim().length === 0) {
+          console.error('Error: No text found in clipboard.');
+          console.error('Make sure you have copied some text and granted clipboard permissions to Terminal.');
+          process.exit(1);
+        }
+      } catch (error) {
+        console.error('Error: Clipboard access failed:', error.message);
+        console.error('On macOS: Go to System Preferences > Security & Privacy > Privacy > Input Monitoring and add Terminal/iTerm.');
         process.exit(1);
       }
     }
 
-    const filePath = generateFileName(format, outputPath, argv.name);
+    const filePath = generateFileName(format, outputPath, customName);
 
     let success;
     if (isImageFormat(format)) {
