@@ -4,10 +4,34 @@ A simple CLI utility to convert clipboard content to files.
 
 ## Installation
 
+### From GitHub (Development)
+
 ```bash
+# Clone the repository
+git clone git@github.com:obbaeiei/clipboard-2-file.git
+cd clipboard-2-file
+
+# Install dependencies
 npm install
-npm link  # or npm install -g .
+
+# Link globally to make 'cb2f' command available anywhere
+npm link
 ```
+
+### From npm (when published)
+
+```bash
+npm install -g clipboard-2-file
+```
+
+### What does `npm link` do?
+
+`npm link` creates a global symlink to your local package:
+1. Creates symlink: `/usr/local/lib/node_modules/clipboard-2-file` → `your-local-project`
+2. Makes CLI available globally: `/usr/local/bin/cb2f` → executable script
+3. Any code changes are immediately reflected (great for development)
+
+To unlink: `npm unlink -g clipboard-2-file`
 
 ## Usage
 
