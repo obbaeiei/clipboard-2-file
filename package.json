@@ -11,15 +11,15 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "clipboard", 
-    "cli", 
-    "file", 
-    "image", 
-    "utility", 
-    "screenshot", 
-    "save", 
-    "macos", 
-    "png", 
+    "clipboard",
+    "cli",
+    "file",
+    "image",
+    "utility",
+    "screenshot",
+    "save",
+    "macos",
+    "png",
     "txt",
     "paste"
   ],
@@ -36,7 +36,9 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "os": ["darwin"],
+  "os": [
+    "darwin"
+  ],
   "dependencies": {
     "clipboardy": "^3.0.0",
     "yargs": "^17.7.2"
